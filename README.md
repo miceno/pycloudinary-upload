@@ -3,6 +3,14 @@ Cloudinary upload tree
 
 This is a python script to upload a folder and its subfolders to Cloudinary CDN.
 
+Setup
+===
+
+Install requirements:
+
+    pip install -r requirements.txt
+   
+   
 Usage
 ==
 
