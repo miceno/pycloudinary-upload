@@ -2,7 +2,7 @@ import argparse
 import os
 
 import cloudinary
-from cloudinary import uploader
+from cloudinary.uploader import upload
 
 EXCLUDE_FILES = [
     '.DS_Store'
@@ -41,10 +41,10 @@ def upload_file(source_filename, destination_filename, base_folder):
     :return:
     """
     print('upload_file', base_folder, source_filename, destination_filename)
-    # result = uploader.upload(source_filename, folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
-    #                            use_filename=True, unique_filename=False, tags='gis')
-    #
-    # print(result)
+    result = upload(source_filename, folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
+                               use_filename=True, unique_filename=False, tags='gis')
+
+    print(result)
     pass
 
 
