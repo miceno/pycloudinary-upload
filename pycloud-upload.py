@@ -29,31 +29,36 @@ def parse_args(app_name, description=None):
                         help="Exclude files")
     parser.add_argument("--tag", '-t', dest='tags', action="append", default=[],
                         help="Set tags on uploaded files")
+    parser.add_argument("--resource-type", '-r', dest='resource_type', action="store",
+                        choices=['image', 'raw', 'video', 'auto'],
+                        default='auto',
+                        help="Set resource type. raw means no transformation on upload")
 
-    args = parser.parse_args()
+    arguments = parser.parse_args()
 
-    if not args.exclude_files:
-        args.exclude_files = EXCLUDE_FILES
+    if not arguments.exclude_files:
+        arguments.exclude_files = EXCLUDE_FILES
 
-    if not args.tags:
-        args.tags = DEFAULT_TAGS
+    if not arguments.tags:
+        arguments.tags = DEFAULT_TAGS
 
-    return args
+    return arguments
 
 
-def upload_file(source_filename, destination_filename, base_folder, tags=[]):
+def upload_file(source_filename, destination_filename, base_folder, tags=[], resource_type='auto'):
     """
     Upload a file to base folder.
 
-    :param filename:
     :param source_filename:
     :param destination_filename:
     :param base_folder:
+    :param tags:
+    :param resource_type:
     :return:
     """
     print('upload_file', base_folder, source_filename, destination_filename)
     result = upload(source_filename, folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
-                    use_filename=True, unique_filename=False, tags=tags)
+                    use_filename=True, unique_filename=False, tags=tags, resource_type=resource_type)
 
     print(result)
     pass
@@ -72,18 +77,21 @@ def create_destination_folder(folder):
     Create a remote folder
 
     :param folder:
-    :param base_folder:
     :return:
     """
     print('create_destination_folder', folder)
     pass
 
 
-def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folder='.', tags=[]):
+def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folder='.', tags=[], resource_type='auto'):
     """
     Upload a folder with structure
 
     :param base_folder:
+    :param exclude_files:
+    :param destination_base_folder:
+    :param tags:
+    :param resource_type:
     :return:
     """
 
@@ -104,9 +112,9 @@ def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folde
             if filename in exclude_files:
                 print("Ignoring file", filename)
                 continue
-            upload_file(os.path.join(subdir, filename), filename, destination_folder, tags)
+            upload_file(os.path.join(subdir, filename), filename, destination_folder, tags, resource_type)
 
-        # Upload subfolders
+        # Create every subfolder
         for d in dirs:
             if d in exclude_files:
                 print("Ignoring folder", d)
@@ -117,9 +125,8 @@ def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folde
 
 
 if __name__ == "__main__":
-
     args = parse_args("upload_tree", "Upload a tree folder to Cloudinary")
     print(args)
 
     cloudinary_init(args.cloud_name, args.api_key, args.api_secret)
-    upload_tree(args.base_folder, args.exclude_files, args.destination_folder, args.tags)
+    upload_tree(args.base_folder, args.exclude_files, args.destination_folder, args.tags, args.resource_type)

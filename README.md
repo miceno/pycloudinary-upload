@@ -16,10 +16,14 @@ Usage
 
 ```commandline
 
-usage: upload_tree [-h] --cloud_name CLOUD_NAME --api_key API_KEY --api_secret
-                   API_SECRET [--destination-folder DESTINATION_FOLDER]
-                   [--exclude-files EXCLUDE_FILES]
-                   base_folder
+usage: upload_tree [-h] 
+                --cloud_name CLOUD_NAME 
+                --api_key API_KEY 
+                --api_secret API_SECRET 
+                [--destination-folder DESTINATION_FOLDER]
+                [--exclude-files EXCLUDE_FILES]
+                [--resource-type RESOURCE_TYPE]
+                base_folder
 
 Upload a tree folder to Cloudinary
 
