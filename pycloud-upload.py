@@ -20,11 +20,14 @@ def parse_args(app_name, description=None):
     """
     parser = argparse.ArgumentParser(app_name, description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--cloud_name", '-c', action="store", help="Cloudinary cloud name", required=True)
+    parser.add_argument("--cloud_name", '-c', action="store", help="Cloudinary cloud name",
+                        required=True)
     parser.add_argument("--api_key", '-a', action="store", help="Cloudinary API key", required=True)
-    parser.add_argument("--api_secret", '-s', action="store", help="Cloudinary API secret", required=True)
+    parser.add_argument("--api_secret", '-s', action="store", help="Cloudinary API secret",
+                        required=True)
     parser.add_argument("base_folder", action="store", help="Base folder to upload")
-    parser.add_argument("--destination-folder", '-d', dest='destination_folder', action="store", default=None,
+    parser.add_argument("--destination-folder", '-d', dest='destination_folder', action="store",
+                        default=None,
                         help="Destination base folder")
 
     parser.add_argument('--unique-filename', dest='unique_filename', action='store_true',
@@ -77,7 +80,8 @@ def parse_args(app_name, description=None):
     return arguments
 
 
-def upload_file(source_filename, destination_filename, base_folder, tags=[], resource_type='auto'):
+def upload_file(source_filename, destination_filename, base_folder, tags=[], resource_type='auto',
+                **options):
     """
     Upload a file to base folder.
 
@@ -88,9 +92,12 @@ def upload_file(source_filename, destination_filename, base_folder, tags=[], res
     :param resource_type:
     :return:
     """
-    print('upload_file', base_folder, source_filename, destination_filename)
-    result = upload(source_filename, folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
-                    use_filename=True, unique_filename=False, tags=tags, resource_type=resource_type)
+    if debug:
+        print('upload_file', base_folder, source_filename, destination_filename)
+    result = upload(source_filename,
+                    folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
+                    use_filename=True, unique_filename=False, tags=tags,
+                    resource_type=resource_type)
 
     return result
 
@@ -108,7 +115,10 @@ def upload_file_concurrent(source_filename,
     :param options:
     :return:
     """
-    print('upload_file', base_folder, source_filename, destination_filename, options)
+    debug = options.get('debug', False) and options.remove('debug')
+
+    if debug:
+        print('upload_file', base_folder, source_filename, destination_filename, options)
     result = upload(source_filename,
                     folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
                     **options)
@@ -116,7 +126,8 @@ def upload_file_concurrent(source_filename,
     return result
 
 
-def cloudinary_init(cloud_name="sample", api_key="874837483274837", api_secret="a676b67565c6767a6767d6767f676fe1"):
+def cloudinary_init(cloud_name="sample", api_key="874837483274837",
+                    api_secret="a676b67565c6767a6767d6767f676fe1"):
     cloudinary.config(
         cloud_name=cloud_name,
         api_key=api_key,
@@ -136,7 +147,8 @@ def create_destination_folder(folder):
     pass
 
 
-def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folder='.', tags=[], resource_type='auto'):
+def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folder='.', tags=[],
+                resource_type='auto', **options):
     """
     Upload a folder with structure
 
@@ -166,7 +178,8 @@ def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folde
             if filename in exclude_files:
                 print("Ignoring file", filename)
                 continue
-            result = upload_file(os.path.join(subdir, filename), filename, destination_folder, tags, resource_type)
+            result = upload_file(os.path.join(subdir, filename), filename, destination_folder, tags,
+                                 resource_type, options)
             results.append(result)
 
         print(results, len(results))
@@ -201,12 +214,16 @@ def upload_tree_concurrent(base_folder,
     :return:
     """
 
+    debug = options.get('debug', False) and options.remove('debug')
+
     uploads = []
     for subdir, dirs, files in os.walk(base_folder):
 
-        print("Processing", subdir)
+        if debug:
+            print("Processing", subdir)
         if os.path.basename(subdir) in exclude_files:
-            print("Ignoring subdir", subdir)
+            if debug:
+                print("Ignoring subdir", subdir)
             continue
         # Upload files
         relative_path = os.path.relpath(subdir, base_folder)
@@ -215,9 +232,11 @@ def upload_tree_concurrent(base_folder,
         if relative_path != '.':
             destination_folder = os.path.join(destination_base_folder, relative_path)
         for filename in files:
-            print(subdir, filename)
+            if debug:
+                print(subdir, filename)
             if filename in exclude_files:
-                print("Ignoring file", filename)
+                if debug:
+                    print("Ignoring file", filename)
                 continue
             params = (os.path.join(subdir, filename), filename, destination_folder, options)
             uploads.append(params)
@@ -225,7 +244,8 @@ def upload_tree_concurrent(base_folder,
         # Create every target subfolder
         for d in dirs:
             if d in exclude_files:
-                print("Ignoring folder", d)
+                if debug:
+                    print("Ignoring folder", d)
                 continue
             create_destination_folder(os.path.join(destination_folder, d))
 
