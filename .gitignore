@@ -58,3 +58,4 @@ Session.vim
 
 # pre-commit config
 .pre-commit-config.yaml
+cloudinary.yaml
