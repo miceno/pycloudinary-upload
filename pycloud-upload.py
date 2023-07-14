@@ -11,6 +11,26 @@ EXCLUDE_FILES = [
 
 DEFAULT_TAGS = ['gis']
 
+counter = None
+total = 0
+# define a counter
+class SafeCounter():
+    # constructor
+    def __init__(self):
+        # initialize counter
+        self._counter = Value('i', 0)
+
+    # increment the counter
+    def increment(self):
+        # get the lock
+        with self._counter.get_lock():
+            self._counter.value += 1
+
+    # get the counter value
+    def value(self):
+        # get the lock
+        with self._counter.get_lock():
+            return self._counter.value
 
 def parse_args(app_name, description=None):
     """
@@ -77,7 +97,7 @@ def parse_args(app_name, description=None):
     return arguments
 
 
-def upload_file(source_filename, destination_filename, base_folder, tags=[], resource_type='auto'):
+def upload_file(source_filename, destination_filename, base_folder, tags=[], resource_type='auto', **options):
     """
     Upload a file to base folder.
 
@@ -88,7 +108,8 @@ def upload_file(source_filename, destination_filename, base_folder, tags=[], res
     :param resource_type:
     :return:
     """
-    print('upload_file', base_folder, source_filename, destination_filename)
+    if debug:
+        print('upload_file', base_folder, source_filename, destination_filename)
     result = upload(source_filename, folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
                     use_filename=True, unique_filename=False, tags=tags, resource_type=resource_type)
 
@@ -108,11 +129,19 @@ def upload_file_concurrent(source_filename,
     :param options:
     :return:
     """
-    print('upload_file', base_folder, source_filename, destination_filename, options)
+    global counter
+    global total
+    debug = options.get('debug', False) and options.remove('debug')
+
+    if debug:
+        print('upload_file', base_folder, source_filename, destination_filename, options)
     result = upload(source_filename,
                     folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
                     **options)
-    print(result)
+    counter.increment()
+    print(f"{counter.value()}/{total} - {destination_filename}")
+    if debug:
+        print(result)
     return result
 
 
@@ -136,7 +165,7 @@ def create_destination_folder(folder):
     pass
 
 
-def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folder='.', tags=[], resource_type='auto'):
+def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folder='.', tags=[], resource_type='auto', **options):
     """
     Upload a folder with structure
 
@@ -166,7 +195,7 @@ def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folde
             if filename in exclude_files:
                 print("Ignoring file", filename)
                 continue
-            result = upload_file(os.path.join(subdir, filename), filename, destination_folder, tags, resource_type)
+            result = upload_file(os.path.join(subdir, filename), filename, destination_folder, tags, resource_type, options)
             results.append(result)
 
         print(results, len(results))
@@ -200,13 +229,17 @@ def upload_tree_concurrent(base_folder,
     :param options:
     :return:
     """
+    global total
+    debug = options.get('debug', False) and options.remove('debug')
 
     uploads = []
     for subdir, dirs, files in os.walk(base_folder):
 
-        print("Processing", subdir)
+        if debug:
+            print("Processing", subdir)
         if os.path.basename(subdir) in exclude_files:
-            print("Ignoring subdir", subdir)
+            if debug:
+                print("Ignoring subdir", subdir)
             continue
         # Upload files
         relative_path = os.path.relpath(subdir, base_folder)
@@ -215,17 +248,22 @@ def upload_tree_concurrent(base_folder,
         if relative_path != '.':
             destination_folder = os.path.join(destination_base_folder, relative_path)
         for filename in files:
-            print(subdir, filename)
+            if debug:
+                print(subdir, filename)
             if filename in exclude_files:
-                print("Ignoring file", filename)
+                if debug:
+                    print("Ignoring file", filename)
                 continue
             params = (os.path.join(subdir, filename), filename, destination_folder, options)
             uploads.append(params)
 
+        total = len(uploads)
+
         # Create every target subfolder
         for d in dirs:
             if d in exclude_files:
-                print("Ignoring folder", d)
+                if debug:
+                    print("Ignoring folder", d)
                 continue
             create_destination_folder(os.path.join(destination_folder, d))
 
@@ -235,6 +273,8 @@ def upload_tree_concurrent(base_folder,
 if __name__ == "__main__":
     args = parse_args("pycloud-upload", "Upload a tree folder to Cloudinary")
     print(args)
+
+    counter = SafeCounter()
 
     cloudinary_init(args.cloud_name, args.api_key, args.api_secret)
     upload_tree_concurrent(args.base_folder, exclude_files=args.exclude_files,
