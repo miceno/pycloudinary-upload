@@ -1,11 +1,11 @@
 import argparse
 import os
 from multiprocessing import pool, Value
-import yaml
-from yaml.loader import SafeLoader
 
 import cloudinary
+import yaml
 from cloudinary.uploader import upload
+from yaml.loader import SafeLoader
 
 EXCLUDE_FILES = [
     '.DS_Store'
@@ -37,9 +37,10 @@ class SafeCounter():
             return self._counter.value
 
 class Config():
-    def __init__(self, filename="cloudinary.yaml"):
+    def __init__(self, filename):
         # Read configuration from file
-
+        if filename is None:
+            filename = "cloudinary.yaml"
         # Open the file and load the file
         with open(filename) as f:
             self.data = yaml.load(f, Loader=SafeLoader)
@@ -48,7 +49,7 @@ class Config():
         if profile is None:
             profile = 'default'
 
-        return self.data.get(profile, dict())
+        return self.data[profile]
 
 def parse_args(app_name, description=None):
     """
@@ -60,10 +61,10 @@ def parse_args(app_name, description=None):
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--config", '-f', action="store", help="Configuration file", required=False)
     parser.add_argument("--profile", '-p', action="store", help="Configuration profile name", required=False)
-    parser.add_argument("--cloud_name", '-c', action="store", help="Cloudinary cloud name", required=True)
-    parser.add_argument("--api_key", '-a', action="store", help="Cloudinary API key", required=True)
+    parser.add_argument("--cloud_name", '-c', action="store", help="Cloudinary cloud name", required=False)
+    parser.add_argument("--api_key", '-a', action="store", help="Cloudinary API key", required=False)
     parser.add_argument("--api_secret", '-s', action="store", help="Cloudinary API secret",
-                        required=True)
+                        required=False)
     parser.add_argument("base_folder", action="store", help="Base folder to upload")
     parser.add_argument("--destination-folder", '-d', dest='destination_folder', action="store",
                         default=None,
@@ -301,11 +302,13 @@ def upload_tree_concurrent(base_folder,
 
 def read_configuration(args):
     result = dict()
-    if args.configuration:
-        configuration = Config(args.configuration).get_config(args.profile)
-        result['cloud_name'] = configuration.get('cloud_name')
-        result['api_key'] = configuration.get('api_key')
-        result['api_secret'] = configuration.get('api_secret')
+    config_file = args.config
+
+    configuration = Config(config_file).get_config(args.profile)
+    if configuration:
+        result['cloud_name'] = configuration['cloud_name']
+        result['api_key'] = configuration['api_key']
+        result['api_secret'] = configuration['api_secret']
     else:
         result['cloud_name'] = args.cloud_name
         result['api_key'] = args.api_key
@@ -315,9 +318,10 @@ def read_configuration(args):
 
 if __name__ == "__main__":
     args = parse_args("pycloud-upload", "Upload a tree folder to Cloudinary")
-    print(args)
 
     configuration = read_configuration(args)
+    print(args)
+    print(configuration)
 
     cloudinary_init(configuration['cloud_name'],
                     configuration['api_key'],
