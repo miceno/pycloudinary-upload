@@ -67,7 +67,7 @@ def parse_args(app_name, description=None):
                         required=False)
     parser.add_argument("base_folder", action="store", help="Base folder to upload")
     parser.add_argument("--destination-folder", '-d', dest='destination_folder', action="store",
-                        default=None,
+                        required=True,
                         help="Destination base folder")
 
     parser.add_argument('--unique-filename', dest='unique_filename', action='store_true',
@@ -326,8 +326,6 @@ if __name__ == "__main__":
     cloudinary_init(configuration['cloud_name'],
                     configuration['api_key'],
                     configuration['api_secret'])
-
-    exit()
 
     counter = SafeCounter()
     upload_tree_concurrent(args.base_folder, exclude_files=args.exclude_files,
