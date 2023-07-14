@@ -1,6 +1,6 @@
 import argparse
 import os
-from multiprocessing import pool
+from multiprocessing import pool, Value
 
 import cloudinary
 from cloudinary.uploader import upload
@@ -40,11 +40,14 @@ def parse_args(app_name, description=None):
     """
     parser = argparse.ArgumentParser(app_name, description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--cloud_name", '-c', action="store", help="Cloudinary cloud name", required=True)
+    parser.add_argument("--cloud_name", '-c', action="store", help="Cloudinary cloud name",
+                        required=True)
     parser.add_argument("--api_key", '-a', action="store", help="Cloudinary API key", required=True)
-    parser.add_argument("--api_secret", '-s', action="store", help="Cloudinary API secret", required=True)
+    parser.add_argument("--api_secret", '-s', action="store", help="Cloudinary API secret",
+                        required=True)
     parser.add_argument("base_folder", action="store", help="Base folder to upload")
-    parser.add_argument("--destination-folder", '-d', dest='destination_folder', action="store", default=None,
+    parser.add_argument("--destination-folder", '-d', dest='destination_folder', action="store",
+                        default=None,
                         help="Destination base folder")
 
     parser.add_argument('--unique-filename', dest='unique_filename', action='store_true',
@@ -97,7 +100,8 @@ def parse_args(app_name, description=None):
     return arguments
 
 
-def upload_file(source_filename, destination_filename, base_folder, tags=[], resource_type='auto', **options):
+def upload_file(source_filename, destination_filename, base_folder, tags=[], resource_type='auto',
+                **options):
     """
     Upload a file to base folder.
 
@@ -145,7 +149,8 @@ def upload_file_concurrent(source_filename,
     return result
 
 
-def cloudinary_init(cloud_name="sample", api_key="874837483274837", api_secret="a676b67565c6767a6767d6767f676fe1"):
+def cloudinary_init(cloud_name="sample", api_key="874837483274837",
+                    api_secret="a676b67565c6767a6767d6767f676fe1"):
     cloudinary.config(
         cloud_name=cloud_name,
         api_key=api_key,
@@ -165,7 +170,8 @@ def create_destination_folder(folder):
     pass
 
 
-def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folder='.', tags=[], resource_type='auto', **options):
+def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folder='.', tags=[],
+                resource_type='auto', **options):
     """
     Upload a folder with structure
 
@@ -195,7 +201,8 @@ def upload_tree(base_folder, exclude_files=EXCLUDE_FILES, destination_base_folde
             if filename in exclude_files:
                 print("Ignoring file", filename)
                 continue
-            result = upload_file(os.path.join(subdir, filename), filename, destination_folder, tags, resource_type, options)
+            result = upload_file(os.path.join(subdir, filename), filename, destination_folder, tags,
+                                 resource_type, options)
             results.append(result)
 
         print(results, len(results))
@@ -230,6 +237,8 @@ def upload_tree_concurrent(base_folder,
     :return:
     """
     global total
+    debug = options.get('debug', False) and options.remove('debug')
+
     debug = options.get('debug', False) and options.remove('debug')
 
     uploads = []
