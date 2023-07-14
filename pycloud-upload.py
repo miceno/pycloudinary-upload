@@ -1,3 +1,4 @@
+from timeit import default_timer as timer
 import argparse
 import os
 from multiprocessing import pool, Value
@@ -16,6 +17,7 @@ DEFAULT_TAGS = ['gis']
 counter = None
 total = 0
 configuration = None
+
 
 # define a counter
 class SafeCounter():
@@ -36,6 +38,7 @@ class SafeCounter():
         with self._counter.get_lock():
             return self._counter.value
 
+
 class Config():
     def __init__(self, filename):
         # Read configuration from file
@@ -51,6 +54,7 @@ class Config():
 
         return self.data[profile]
 
+
 def parse_args(app_name, description=None):
     """
     Parse arguments
@@ -60,9 +64,12 @@ def parse_args(app_name, description=None):
     parser = argparse.ArgumentParser(app_name, description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--config", '-f', action="store", help="Configuration file", required=False)
-    parser.add_argument("--profile", '-p', action="store", help="Configuration profile name", required=False)
-    parser.add_argument("--cloud_name", '-c', action="store", help="Cloudinary cloud name", required=False)
-    parser.add_argument("--api_key", '-a', action="store", help="Cloudinary API key", required=False)
+    parser.add_argument("--profile", '-p', action="store", help="Configuration profile name",
+                        required=False)
+    parser.add_argument("--cloud_name", '-c', action="store", help="Cloudinary cloud name",
+                        required=False)
+    parser.add_argument("--api_key", '-a', action="store", help="Cloudinary API key",
+                        required=False)
     parser.add_argument("--api_secret", '-s', action="store", help="Cloudinary API secret",
                         required=False)
     parser.add_argument("base_folder", action="store", help="Base folder to upload")
@@ -106,7 +113,7 @@ def parse_args(app_name, description=None):
                         help="Set resource type. raw means no transformation on upload")
     parser.add_argument("--concurrent_workers", "-w",
                         type=int,
-                        default=10,
+                        default=15,
                         help="Specify number of concurrent network threads.")
 
     arguments = parser.parse_args()
@@ -136,8 +143,10 @@ def upload_file(source_filename, destination_filename, base_folder, tags=[], res
 
     if debug:
         print('upload_file', base_folder, source_filename, destination_filename)
-    result = upload(source_filename, folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
-                    use_filename=True, unique_filename=False, tags=tags, resource_type=resource_type)
+    result = upload(source_filename,
+                    folder=os.path.join(base_folder, os.path.dirname(destination_filename)),
+                    use_filename=True, unique_filename=False, tags=tags,
+                    resource_type=resource_type)
 
     return result
 
@@ -300,6 +309,7 @@ def upload_tree_concurrent(base_folder,
 
     run_tasks_concurrently(upload_file_concurrent, uploads, concurrent_workers)
 
+
 def read_configuration(args):
     result = dict()
     config_file = args.config
@@ -316,6 +326,7 @@ def read_configuration(args):
 
     return result
 
+
 if __name__ == "__main__":
     args = parse_args("pycloud-upload", "Upload a tree folder to Cloudinary")
 
@@ -328,8 +339,13 @@ if __name__ == "__main__":
                     configuration['api_secret'])
 
     counter = SafeCounter()
+
+    start = timer()
     upload_tree_concurrent(args.base_folder, exclude_files=args.exclude_files,
                            destination_base_folder=args.destination_folder, tags=args.tags,
                            resource_type=args.resource_type,
                            use_filename=args.use_filename,
                            unique_filename=args.unique_filename)
+    end = timer()
+    print(f"It took {end - start} seconds to upload.")
+    print(f"Files per second: {total/(end - start)}")
