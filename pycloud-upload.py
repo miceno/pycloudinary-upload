@@ -37,7 +37,7 @@ class SafeCounter():
             return self._counter.value
 
 class Config():
-    def __init__(self, filename="cloudinary.yml"):
+    def __init__(self, filename="cloudinary.yaml"):
         # Read configuration from file
 
         # Open the file and load the file
